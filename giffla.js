@@ -1,13 +1,11 @@
 "use strict";
 
 /*
-    urls -> image loader -> (image*) -> image cycler
-
-    1. get list of images to display
-    2. feed image list to image loader
-    3. loader loads images, and emits them
-    4. cycler receives new images, and adds them to its queue
-    5. cycler repeatedly displays images from its queue
+    1. Get list of images to display
+    2. Feed image list to image loader
+    3. Loader loads images, and emits them
+    4. Cycler receives new images, and adds them to its queue
+    5. Cycler repeatedly displays images from its queue
 */
 
 var INTERVAL_SECONDS = 8;
@@ -75,9 +73,32 @@ function showImage(url) {
     document.body.appendChild(newImage.firstChild);
 }
 
-var defaults = "?http://i.imgur.com/sMilr1I.gif,http://i.imgur.com/Bk8j2Ax.gif,http://45.media.tumblr.com/2d6667e7a3d2bae53fa7b619be00e5ee/tumblr_n9y0x3HKeN1rv33k2o6_500.gif,http://i.imgur.com/HON37HH.gif,https://i.imgur.com/RNFpXtr.gif";
-var search = window.location.search || defaults;
-var urls = search.substring(1).split(",");
+function extractGifUrls(res) {
+    function suffix(str) {
+        return str.substring(str.lastIndexOf("."));
+    }
 
-var addImageCallback = cycleImages();
-loadImages(urls, addImageCallback);
+    return res.map(function(c) {
+            return c.data.url;
+        })
+        .filter(function(url) {
+            return url && suffix(url) === ".gif" || suffix(url) === ".gifv";
+        }).map(function(url) {
+            if (suffix(url) === ".gifv") {
+                return url.substring(0, url.lastIndexOf(".gifv")) + ".gif";
+            }
+            return url;
+        });
+}
+
+axios.get("https://www.reddit.com/r/perfectloops/.json")
+    .then(function(response) {
+        return extractGifUrls(response.data.data.children)
+    })
+    .then(function start(urls) {
+        var addImageCallback = cycleImages();
+        loadImages(urls, addImageCallback);
+    })
+    .catch(function(err) {
+        document.body.innerHTML = "Couldn't get list of images to show, sorry! " + err.message;
+    });
