@@ -30,10 +30,19 @@
             background-size: cover;
             background-position: center center;
         }
+
+        .fade-in {
+            animation: fadein 2s;
+        }
+
+        @keyframes fadein {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
     </style>
 </head>
 <body>
     <script src="giffla.js"></script>
-    <img class="current-image" alt="" />
 </body>
 </html>
