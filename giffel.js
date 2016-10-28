@@ -8,8 +8,8 @@
     5. Cycler repeatedly displays images from its queue
 */
 
-var INTERVAL_SECONDS = 8;
-var ANIMATION_DURATION = 3;
+const INTERVAL_SECONDS = 8;
+const ANIMATION_DURATION = 3;
 
 function loadImages(urls, callback) {
     if (urls.length === 0) {
@@ -18,20 +18,16 @@ function loadImages(urls, callback) {
     }
 
     function loadImage(url, callback) {
-        var img = document.createElement("img");
-        img.onload = function(e) {
-            callback(img);
-        }
-        img.onerror = function(e) {
-            console.error("Error loading image: " + e.message);
-        }
+        const img = document.createElement("img");
+        img.onload = e => callback(img);
+        img.onerror = e => console.error(`Error loading image: ${e.message}`);
         console.log("Loading:", url);
         img.src = url;
     }
 
-    var queue = [].concat(urls);
+    const queue = [].concat(urls);
 
-    loadImage(queue.shift(), function(img) {
+    loadImage(queue.shift(), img => {
         callback(img);
         loadImages(queue, callback);
     });
@@ -39,9 +35,9 @@ function loadImages(urls, callback) {
 
 // Starts cycling images and returns a function used to add new images into queue
 function cycleImages() {
-    var currentIndex = -1;
-    var queue = [];
-    var interval = null;
+    let currentIndex = -1;
+    let queue = [];
+    let interval = null;
 
     function nextImage() {
         currentIndex = (currentIndex + 1) % (queue.length || 1);
@@ -61,29 +57,24 @@ function cycleImages() {
 
 function showImage(url) {
     // Wait for new image to animate in, then remove old
-    var oldImage = document.querySelector(".current-image");
+    const oldImage = document.querySelector(".current-image");
     if (oldImage) {
-        setTimeout(function() {
-            oldImage.parentNode.removeChild(oldImage);
-        }, ANIMATION_DURATION * 1000);
+        setTimeout(() => oldImage.parentNode.removeChild(oldImage),
+            ANIMATION_DURATION * 1000);
     }
-    var newImage = document.createElement("div");
-    newImage.innerHTML = '<div class="current-image fullscreen fade-in" ' +
-        'style="background-image: url(' + url + ')"></div>';
+
+    const newImage = document.createElement("div");
+    newImage.innerHTML = `<div class="current-image fullscreen fade-in"
+        style="background-image: url(${url})"></div>`;
     document.body.appendChild(newImage.firstChild);
 }
 
 function extractGifUrls(res) {
-    function suffix(str) {
-        return str.substring(str.lastIndexOf("."));
-    }
-
-    return res.map(function(c) {
-            return c.data.url;
-        })
-        .filter(function(url) {
-            return url && suffix(url) === ".gif" || suffix(url) === ".gifv";
-        }).map(function(url) {
+    const suffix = str => str.substring(str.lastIndexOf("."));
+    return res
+        .map(c => c.data.url)
+        .filter(url => url && suffix(url) === ".gif" || suffix(url) === ".gifv")
+        .map(url => {
             if (suffix(url) === ".gifv") {
                 return url.substring(0, url.lastIndexOf(".gifv")) + ".gif";
             }
@@ -92,13 +83,8 @@ function extractGifUrls(res) {
 }
 
 axios.get("https://www.reddit.com/r/perfectloops/.json")
-    .then(function(response) {
-        return extractGifUrls(response.data.data.children)
-    })
-    .then(function start(urls) {
-        var addImageCallback = cycleImages();
-        loadImages(urls, addImageCallback);
-    })
-    .catch(function(err) {
-        document.body.innerHTML = "Couldn't get list of images to show, sorry! " + err.message;
+    .then(res => extractGifUrls(res.data.data.children))
+    .then(urls => loadImages(urls, cycleImages()))
+    .catch(err => {
+        document.body.innerHTML = `Couldn't get list of images to show, sorry! ${err.message}`;
     });
